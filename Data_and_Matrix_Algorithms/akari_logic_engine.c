@@ -1,5 +1,7 @@
 #include <stdio.h>
 #define MAX 50
+
+/* Propagate light rays ('x') horizontally and vertically from each bulb ('L') */
 void propagare_lumina(int a, int b, char v[MAX][MAX])
 {
 	for (int i = 0; i < a; i++) {
@@ -38,6 +40,7 @@ void propagare_lumina(int a, int b, char v[MAX][MAX])
 	}
 }
 
+/* Block remaining empty spaces around a numbered cell if its bulb capacity is already met */
 void modif_blocuri_adiacente(int a, int b, char v[MAX][MAX])
 {
 	for (int i = 0; i < a; i++) {
@@ -76,6 +79,7 @@ void modif_blocuri_adiacente(int a, int b, char v[MAX][MAX])
 	}
 }
 
+/* Validate that no two bulbs illuminate each other directly */
 int luminare_reciproca(int a, int b, char v[MAX][MAX])
 {
 	int ok = 1;
@@ -102,6 +106,7 @@ int luminare_reciproca(int a, int b, char v[MAX][MAX])
 	return ok;
 }
 
+/* Ensure no numbered block is surrounded by more bulbs than its maximum limit */
 int becuri_adiacente(int a, int b, char v[MAX][MAX])
 {
 	for (int i = 0; i < a; i++) {
@@ -129,6 +134,7 @@ int becuri_adiacente(int a, int b, char v[MAX][MAX])
 	return 1;
 }
 
+/* Verify if a numbered block still has enough empty adjacent spaces to reach its required bulb count */
 int lumineaza_celula(int a, int b, char v[MAX][MAX])
 {	for (int i = 0; i < a; i++) {
 		for (int j = 0; j < b ; j++) {
@@ -174,6 +180,7 @@ int main(void)
 			scanf(" %c", &grid[i][j]);
 		}
 	}
+	
 	if (o == 1) {
 		propagare_lumina(n, m, grid);
 		modif_blocuri_adiacente(n, m, grid);
@@ -185,6 +192,7 @@ int main(void)
 			printf("\n");
 		}
 	}
+	
 	if (o == 2) {
 		if (luminare_reciproca(n, m, grid) == 0) {
 			printf("zero\n");

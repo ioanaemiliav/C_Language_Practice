@@ -8,6 +8,7 @@
 
 #define MAX 101
 
+/* Dynamically allocate a 2D integer array for the game board */
 int **calloc_tabla(int nl, int nc)
 {
 	int **tabla = calloc(nl + 1, sizeof(int *));
@@ -25,6 +26,7 @@ int **calloc_tabla(int nl, int nc)
 	return tabla;
 }
 
+/* Allocate a 2D array to store the valid placement coordinates of the ships */
 int **calloc_coordonate(void)
 {
 	int **amplasare = calloc(MAX + 1, sizeof(int *));
@@ -42,6 +44,7 @@ int **calloc_coordonate(void)
 	return amplasare;
 }
 
+/* Allocate memory to store the orientation (Horizontal/Vertical) of each ship */
 char **calloc_orientare(void)
 {
 	char **orientare = calloc(MAX + 1, sizeof(char *));
@@ -59,6 +62,7 @@ char **calloc_orientare(void)
 	return orientare;
 }
 
+/* Allocate memory for tracking game statistics and accuracy data */
 float **calloc_date(int j)
 {
 	float **date = calloc(j + 1, sizeof(float *));
@@ -76,6 +80,7 @@ float **calloc_date(int j)
 	return date;
 }
 
+/* Map the ship type identifier to its corresponding length */
 int lungime_barca(char tip)
 {
 	int l;
@@ -99,6 +104,7 @@ int lungime_barca(char tip)
 	return l;
 }
 
+/* Display error messages for invalid ship placements */
 void amplasare_gresita(char tip, char orientare, int x, int y)
 {
 	if (orientare == 'V') {
@@ -150,9 +156,10 @@ void amplasare_gresita(char tip, char orientare, int x, int y)
 	}
 }
 
+/* Validate if the required vertical space is free of other ships */
 int locuri_libere_vertical(int **tabla, int x, int y, int lungime)
 {
-	for (int i = x;  i > x - lungime; i--) {
+	for (int i = x; i > x - lungime; i--) {
 		if (tabla[i][y] != 0) {
 			return 0;
 		}
@@ -160,6 +167,7 @@ int locuri_libere_vertical(int **tabla, int x, int y, int lungime)
 	return 1;
 }
 
+/* Validate if the required horizontal space is free of other ships */
 int locuri_libere_orizontal(int **tabla, int x, int y, int lungime)
 {
 	for (int i = y; i < y + lungime; i++) {
@@ -170,6 +178,7 @@ int locuri_libere_orizontal(int **tabla, int x, int y, int lungime)
 	return 1;
 }
 
+/* Process ship placement inputs, dynamically reallocate tracking arrays if needed, and update the board */
 int citeste_linii_amplasare(int **tabla, int nl, int nc, char ***orientare,
 							int ***coordonate_amplasare_corect,
 							int *amplasate_corect, int *alocat)
@@ -179,7 +188,7 @@ int citeste_linii_amplasare(int **tabla, int nl, int nc, char ***orientare,
 		int **tmp1 = realloc(*coordonate_amplasare_corect,
 			(*alocat + 1) * sizeof(int *));
 		if (tmp1) {
-			for (int i = *alocat - MAX + 1; i <=  *alocat; i++) {
+			for (int i = *alocat - MAX + 1; i <= *alocat; i++) {
 				tmp1[i] = calloc(3, sizeof(int));
 			}
 			*coordonate_amplasare_corect = tmp1;
@@ -200,17 +209,20 @@ int citeste_linii_amplasare(int **tabla, int nl, int nc, char ***orientare,
 	int x, y;
 	scanf(" %c %c %d %d", &tip, &orient, &x, &y);
 	int lungime = lungime_barca(tip);
+	
+	// Boundary validation
 	if (x > nl || y > nc || (orient == 'V' && lungime > x) ||
 		(orient == 'H' && lungime > nc - y + 1)) {
 		amplasare_gresita(tip, orient, x, y);
 		return 0;
 	}
+	
 	if (orient == 'V') {
 		if (locuri_libere_vertical(tabla, x, y, lungime) == 0) {
 			amplasare_gresita(tip, orient, x, y);
 			return 0;
 		}
-		for (int i = x;  i > x - lungime; i--) {
+		for (int i = x; i > x - lungime; i--) {
 			tabla[i][y] = lungime;
 		}
 	} else {
@@ -222,13 +234,16 @@ int citeste_linii_amplasare(int **tabla, int nl, int nc, char ***orientare,
 			tabla[x][i] = lungime;
 		}
 	}
+	
 	(*amplasate_corect)++;
 	(*coordonate_amplasare_corect)[*amplasate_corect][1] = x;
 	(*coordonate_amplasare_corect)[*amplasate_corect][2] = y;
 	(*orientare)[*amplasate_corect][0] = orient;
+	
 	return 1;
 }
 
+/* Print the current state of both players' boards */
 void afisare_table(int **tabla1, int **tabla2, int nl, int nc)
 {
 	for (int i = 1; i <= nl; i++) {
@@ -246,6 +261,7 @@ void afisare_table(int **tabla1, int **tabla2, int nl, int nc)
 	}
 }
 
+/* Map the numerical ship length to its full string name */
 char *nume_nava(int lungime)
 {
 	switch (lungime) {
@@ -263,6 +279,7 @@ char *nume_nava(int lungime)
 	return 0;
 }
 
+/* Execute Player 1's attack, evaluate hits/misses, and update the board and ship counts */
 int atac_jucator1(int **tabla2, int **coordonate_aplasare_corect,
 				  char **orientare, int ship_m, int x, int y,
 				  int *amplasate_corect, int *nimerite1)
@@ -282,6 +299,7 @@ int atac_jucator1(int **tabla2, int **coordonate_aplasare_corect,
 	}
 	(*nimerite1)++;
 	char *nume = nume_nava(tabla2[x][y]);
+	
 	for (int i = 2; i <= *amplasate_corect; i = i + 2) {
 		if (coordonate_aplasare_corect[i][1] == x &&
 			coordonate_aplasare_corect[i][2] == y) {
@@ -314,6 +332,7 @@ int atac_jucator1(int **tabla2, int **coordonate_aplasare_corect,
 	return ship;
 }
 
+/* Execute Player 2's attack, evaluate hits/misses, and update the board and ship counts */
 int atac_jucator2(int **tabla1, int **coordonate_aplasare_corect,
 				  char **orientare, int ship_g, int x, int y,
 				  int *amplasate_corect, int *nimerite2)
@@ -333,6 +352,7 @@ int atac_jucator2(int **tabla1, int **coordonate_aplasare_corect,
 	}
 	(*nimerite2)++;
 	char *nume = nume_nava(tabla1[x][y]);
+	
 	for (int i = 1; i <= *amplasate_corect; i = i + 2) {
 		if (coordonate_aplasare_corect[i][1] == x &&
 			coordonate_aplasare_corect[i][2] == y) {
@@ -365,6 +385,7 @@ int atac_jucator2(int **tabla1, int **coordonate_aplasare_corect,
 	return ship;
 }
 
+/* Main combat loop handling alternating player turns until victory */
 void atacuri(int **tabla1, int **tabla2, int *amplasate_corect,
 			 char **orientare, int **coordonate_amplasare_corect, int *nr_nave,
 			 int *nimerite1, int *nimerite2, int *totale1, int *totale2)
@@ -394,6 +415,7 @@ void atacuri(int **tabla1, int **tabla2, int *amplasate_corect,
 	}
 }
 
+/* Safely deallocate dynamic 2D integer arrays */
 void free_int(int **matrice, int nl)
 {
 	for (int i = 1; i <= nl; i++) {
@@ -408,6 +430,7 @@ void free_int(int **matrice, int nl)
 	}
 }
 
+/* Safely deallocate dynamic 2D character arrays */
 void free_char(char **matrice, int nl)
 {
 	for (int i = 1; i <= nl; i++) {
@@ -422,6 +445,7 @@ void free_char(char **matrice, int nl)
 	}
 }
 
+/* Safely deallocate tracking data arrays */
 void free_date(float **date, int j)
 {
 	for (int i = 1; i <= j; i++) {
@@ -436,6 +460,7 @@ void free_date(float **date, int j)
 	}
 }
 
+/* Truncate float values to 2 decimal points without rounding up */
 float numar_nerotunjit(float x)
 {
 	int y = x * 100.0;
@@ -443,6 +468,7 @@ float numar_nerotunjit(float x)
 	return x;
 }
 
+/* Predictive Analytics: Calculate the minimum matches needed with 100% accuracy to reach the target */
 int cerinta_1(float **date, float acc_dorita, float suma_totala,
 			  int j, int nave_total)
 {
@@ -467,6 +493,7 @@ int cerinta_1(float **date, float acc_dorita, float suma_totala,
 	return meciuri;
 }
 
+/* Predictive Analytics: Calculate the maximum matches that can have 0% accuracy while staying above the target */
 int cerinta_3(float **date, float acc_dorita, float suma_totala,
 			  int j, int nave_total)
 {
@@ -492,6 +519,7 @@ int cerinta_3(float **date, float acc_dorita, float suma_totala,
 	return meciuri - 1;
 }
 
+/* Parse queries and display player-specific accuracy statistics */
 void afisare_jucator(char *citire, float **date, int j)
 {
 	int cerinta1, cerinta2, cerinta3, cerinta4;
@@ -500,6 +528,7 @@ void afisare_jucator(char *citire, float **date, int j)
 	float acc_dorita = (citire[5] - '0') * 100 + (citire[6] - '0') * 10 +
 					   (citire[7] - '0') + (citire[9] - '0') * 0.1 +
 					   (citire[10] - '0') * 0.01;
+	
 	if (citire[1] == 'U') {
 		if (meci > j) {
 			printf("Nu exista date pentru meciul cerut.\n");
@@ -547,6 +576,7 @@ void afisare_jucator(char *citire, float **date, int j)
 	}
 }
 
+/* Allocate the 3x3 matrix block required for the Hill Cipher key */
 int **calloc_cheie(void)
 {
 	int **cheie = calloc(4, sizeof(int *));
@@ -564,6 +594,7 @@ int **calloc_cheie(void)
 	return cheie;
 }
 
+/* Cryptography: Map characters to their Z_37 algebraic integer representations */
 int decodificare(char element)
 {
 	if (element == '.') {
@@ -575,6 +606,7 @@ int decodificare(char element)
 	return 10 + element - 'A';
 }
 
+/* Cryptography: Map Z_37 algebraic integers back to characters */
 char codificare(int element)
 {
 	if (element == 36) {
@@ -586,6 +618,7 @@ char codificare(int element)
 	return 'A' - 10 + element;
 }
 
+/* Safely deallocate the cryptographic key matrix */
 void free_cheie(int **cheie)
 {
 	for (int i = 1; i <= 3; i++) {
@@ -600,6 +633,7 @@ void free_cheie(int **cheie)
 	}
 }
 
+/* Allocate memory for processing message blocks during encryption/decryption */
 int **calloc_bloc(void)
 {
 	int **bloc = calloc(4, sizeof(int *));
@@ -617,6 +651,7 @@ int **calloc_bloc(void)
 	return bloc;
 }
 
+/* Safely deallocate message blocks */
 void free_bloc(int **bloc)
 {
 	for (int i = 1; i <= 3; i++) {
@@ -631,6 +666,7 @@ void free_bloc(int **bloc)
 	}
 }
 
+/* Calculate the determinant of a 2x2 matrix */
 int determinant_2(int **matrice_key)
 {
 	int det_key = matrice_key[1][1] * matrice_key[2][2];
@@ -638,6 +674,7 @@ int determinant_2(int **matrice_key)
 	return det_key;
 }
 
+/* Calculate the determinant of a 3x3 matrix */
 int determinant_3(int **matrice_key)
 {
 	int det_key = matrice_key[1][1] * matrice_key[2][2] * matrice_key[3][3];
@@ -649,6 +686,7 @@ int determinant_3(int **matrice_key)
 	return det_key;
 }
 
+/* Calculate the adjugate of a 2x2 matrix */
 int **adjuncta2(int **matrice_key2, int **adjuncta)
 {
 	adjuncta[1][1] = matrice_key2[2][2];
@@ -658,6 +696,7 @@ int **adjuncta2(int **matrice_key2, int **adjuncta)
 	return adjuncta;
 }
 
+/* Calculate the adjugate of a 3x3 matrix */
 int **adjuncta3(int **matrice_key, int **adjuncta)
 {
 	int c11 = matrice_key[2][2] * matrice_key[3][3] -
@@ -678,12 +717,15 @@ int **adjuncta3(int **matrice_key, int **adjuncta)
 			 matrice_key[1][3] * matrice_key[2][1]);
 	int c33 = matrice_key[1][1] * matrice_key[2][2] -
 			 matrice_key[1][2] * matrice_key[2][1];
+			 
 	adjuncta[1][1] = c11; adjuncta[2][1] = c12; adjuncta[3][1] = c13;
 	adjuncta[1][2] = c21; adjuncta[2][2] = c22; adjuncta[3][2] = c23;
 	adjuncta[1][3] = c31; adjuncta[2][3] = c32; adjuncta[3][3] = c33;
+	
 	return adjuncta;
 }
 
+/* Calculate the modular multiplicative inverse */
 int invers_multiplicativ(int det, int K)
 {
 	for (int x = 1; x < K; x++) {
@@ -694,6 +736,7 @@ int invers_multiplicativ(int det, int K)
 	return -1;
 }
 
+/* Encrypt statistics output using the Hill Cipher algorithm */
 void criptare(int **matrice_key, char *afisare)
 {
 	size_t len = strlen(afisare);
@@ -725,6 +768,7 @@ void criptare(int **matrice_key, char *afisare)
 	printf("%s\n", afisare);
 }
 
+/* Format the float accuracy metric into the buffer array for encryption */
 void acc_afisare(char *afisare, float acc)
 {
 	int acc1 = (int)(acc + 0.5f);
@@ -737,14 +781,15 @@ void acc_afisare(char *afisare, float acc)
 	afisare[6] = '\0';
 }
 
+/* Append the objective integer requirement into the encryption buffer array */
 void cerinta_afisare(char *afisare, int cerinta)
 {
 	char temp[4];
 	sprintf(temp, "%03d", cerinta);
 	strcat(afisare, temp);
-
 }
 
+/* Generate statistics and route them through the encryption protocol */
 void calculare_statistici(int **matrice_key, char *citire, float **date, int j)
 {
 	int cerinta1, cerinta2, cerinta3, cerinta4;
@@ -757,6 +802,7 @@ void calculare_statistici(int **matrice_key, char *citire, float **date, int j)
 	float acc_dorita = (citire[5] - '0') * 100 + (citire[6] - '0') * 10 +
 					   (citire[7] - '0') + (citire[9] - '0') * 0.1 +
 					   (citire[10] - '0') * 0.01;
+	
 	if (citire[1] == 'U') {
 		if (meci > j) {
 			printf("Nu exista date pentru meciul cerut.\n");
@@ -808,6 +854,7 @@ void calculare_statistici(int **matrice_key, char *citire, float **date, int j)
 	}
 }
 
+/* Decode incoming encrypted data streams and process logic based on the decoded payload */
 void decriptare(int **matrice_key, char *mesaj, float **date_g,
 				float **date_m, int j)
 {
@@ -847,11 +894,13 @@ void decriptare(int **matrice_key, char *mesaj, float **date_g,
 			det = determinant_3(matrice_key);
 			adjuncta = adjuncta3(matrice_key, adjuncta);
 		}
+		
 		if (det >= 0) {
 			det = det % 37;
 		} else {
 			det = det % 37 + 37;
 		}
+		
 		int x = invers_multiplicativ(det, 37);
 		for (int i = 1; i <= k; i++) {
 			for (int j = 1; j <= k; j++) {
@@ -862,6 +911,7 @@ void decriptare(int **matrice_key, char *mesaj, float **date_g,
 				}
 			}
 		}
+		
 		for (int i = 1; i <= k; i++) {
 			int suma = 0;
 			for (int j = 1; j <= k; j++) {
@@ -878,6 +928,7 @@ void decriptare(int **matrice_key, char *mesaj, float **date_g,
 		free_cheie(matrice_key2);
 		free_bloc(bloc), free_bloc(inmultire), free_cheie(adjuncta);
 	}
+	
 	if (mesaj[0] == 'O') {
 		calculare_statistici(matrice_key, mesaj, date_g, j);
 	} else if (mesaj[0] == 'T') {
@@ -885,13 +936,16 @@ void decriptare(int **matrice_key, char *mesaj, float **date_g,
 	}
 }
 
+/* Main control interface for processing statistics queries and handling key routing */
 void statistici(float **date_g, float **date_m, int j)
-{	scanf(" ");
+{	
+	scanf(" ");
 	char *key = calloc(15, sizeof(char));
 	if (!key) {
 		printf("Eroare la alocare citire.\n");
 	}
 	fgets(key, 15, stdin);
+	
 	if (key[0] == '-') {
 		char *citire = calloc(20, sizeof(char));
 		if (!citire) {
@@ -933,20 +987,24 @@ void statistici(float **date_g, float **date_m, int j)
 	free(key);
 }
 
+/* Initialization and core game execution loop */
 int main(void)
 {
 	int j = 0, aux = 0;
 	scanf("%d ", &j);
 	float **date_g = calloc_date(j), **date_m = calloc_date(j);
+	
 	while (aux++ < j) {
 		int n, m, amplasate_corect = 0, k = 1, alocat = MAX;
 		int nimerite_g = 0, nimerite_m = 0, total_g = 0, total_m = 0;
 		scanf("%d %d", &n, &m);
 		int nr_nave = n * m / 70 + n * m / 55 + n * m / 40 +
 					 n * m / 30 + n * m / 20;
+					 
 		int **tabla_g = calloc_tabla(n, m), **tabla_m = calloc_tabla(n, m);
 		int **coordonate_amplasare_corect = calloc_coordonate();
 		char **orientare = calloc_orientare();
+		
 		while (k++ <= nr_nave) {
 			int ok1 = 0;
 			while (ok1 == 0) {
@@ -961,18 +1019,24 @@ int main(void)
 											  &amplasate_corect, &alocat);
 			}
 		}
+		
 		afisare_table(tabla_g, tabla_m, n, m);
 		atacuri(tabla_g, tabla_m, &amplasate_corect, orientare,
 				coordonate_amplasare_corect, &nr_nave,
 				&nimerite_g, &nimerite_m, &total_g, &total_m);
+				
 		date_g[aux][1] = nimerite_g; date_g[aux][2] = total_g;
 		date_m[aux][1] = nimerite_m; date_m[aux][2] = total_m;
 		date_g[aux][3] = nr_nave; date_m[aux][3] = nr_nave;
+		
 		free_int(tabla_g, n); free_int(tabla_m, n);
 		free_char(orientare, alocat);
 		free_int(coordonate_amplasare_corect, alocat);
 	}
+	
 	statistici(date_g, date_m, j);
+	
 	free_date(date_g, j); free_date(date_m, j);
+	
 	return 0;
 }

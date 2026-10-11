@@ -1,5 +1,3 @@
-//Vizdoaga Emilia-Ioana, 314CD
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -21,7 +19,6 @@ typedef struct {
 	int bbxoff;
 	int bbyoff;
 	unsigned char **bitmaps;
-
 } chars;
 
 typedef struct {
@@ -38,6 +35,7 @@ typedef struct {
 	chars *caracter;
 } comanda; // salvez comenzile care pot fi folosite de undo/redo
 
+/* Safely reallocate memory for the turtle's spatial state stack */
 stare_testoasa *realocare_stare(stare_testoasa *stare, int cnt)
 {
 	stare_testoasa *tmp = realloc(stare, cnt * 2 * sizeof(stare_testoasa));
@@ -50,6 +48,7 @@ stare_testoasa *realocare_stare(stare_testoasa *stare, int cnt)
 	return stare;
 }
 
+/* Safely reallocate memory for the command history stack (Undo/Redo) */
 comanda *realocare_comanda(comanda *comanda_, int cnt)
 {
 	comanda *tmp = realloc(comanda_, cnt * 2 * sizeof(comanda));
@@ -62,6 +61,7 @@ comanda *realocare_comanda(comanda *comanda_, int cnt)
 	return comanda_;
 }
 
+/* Allocate dynamic memory for string buffers */
 char *alocare_dinamica(void)
 {
 	char *sir = malloc(MAX * sizeof(char));
@@ -73,6 +73,7 @@ char *alocare_dinamica(void)
 	return sir;
 }
 
+/* Safely reallocate memory for dynamic string scaling */
 char *realocare_dinamica(char *sir, int cnt)
 {
 	char *tmp1 = realloc(sir, cnt * 2 * sizeof(char));
@@ -84,6 +85,7 @@ char *realocare_dinamica(char *sir, int cnt)
 	return sir;
 }
 
+/* Deallocate a string pointer and set to NULL */
 void free_sir(char **sir)
 {
 	if (*sir) {
@@ -92,6 +94,7 @@ void free_sir(char **sir)
 	}
 }
 
+/* Deallocate a 2D character array */
 void free_tablou(char **tablou, int cnt)
 {
 	if (tablou) {
@@ -102,6 +105,7 @@ void free_tablou(char **tablou, int cnt)
 	}
 }
 
+/* Deallocate a 2D unsigned character array (e.g., pixel matrices) */
 void free_tablou_unsigned(unsigned char **tablou, int cnt)
 {
 	if (tablou) {
@@ -112,6 +116,7 @@ void free_tablou_unsigned(unsigned char **tablou, int cnt)
 	}
 }
 
+/* Free all resources allocated in the Undo history stack */
 void free_undo(comanda *comanda_undo, int cnt_undo)
 {
 	for (int i = 0; i <= cnt_undo; i++) {
@@ -131,6 +136,7 @@ void free_undo(comanda *comanda_undo, int cnt_undo)
 	}
 }
 
+/* Free all resources allocated in the Redo history stack */
 void free_redo(comanda *comanda_redo, int cnt_redo)
 {
 	for (int i = 0; i <= cnt_redo; i++) {
@@ -150,6 +156,7 @@ void free_redo(comanda *comanda_redo, int cnt_redo)
 	}
 }
 
+/* Revert the last undoable command and push it to the Redo stack */
 void undo(comanda *comanda_undo, comanda *comanda_redo,
 		  int *cnt_undo, int *cnt_redo)
 {
@@ -162,6 +169,7 @@ void undo(comanda *comanda_undo, comanda *comanda_redo,
 	}
 }
 
+/* Re-apply the last reverted command and push it back to the Undo stack */
 void redo(comanda *comanda_undo, comanda *comanda_redo,
 		  int *cnt_undo, int *cnt_redo)
 {
@@ -170,30 +178,31 @@ void redo(comanda *comanda_undo, comanda *comanda_redo,
 	} else {
 		(*cnt_undo)++;
 		comanda_undo[*cnt_undo] = comanda_redo[*cnt_redo];
-		if (comanda_undo[*cnt_undo].axioma) { //comanda este L-system
+		if (comanda_undo[*cnt_undo].axioma) { // Command is L-system
 			printf("Loaded %s (", comanda_undo[*cnt_undo].fisier);
 			printf("L-system with %d rules)\n", comanda_undo[*cnt_undo].nrules);
 		}
-		//comanda este Load
+		// Command is Load
 		if (comanda_undo[*cnt_undo].fisier && comanda_undo[*cnt_undo].pixeli) {
 			printf("Loaded %s (", comanda_undo[*cnt_undo].fisier);
 			printf("PPM image %dx%d)\n", comanda_undo[*cnt_undo].w,
 				   comanda_undo[*cnt_undo].h);
 		} else if (comanda_undo[*cnt_undo].pixeli &&
-				   !comanda_undo[*cnt_undo].nglyph) { //comanda este Turtle
+				   !comanda_undo[*cnt_undo].nglyph) { // Command is Turtle
 			printf("Drawing done\n");
 		}
-		if (comanda_undo[*cnt_undo].nume_font) {
+		if (comanda_undo[*cnt_undo].nume_font) { // Command is Font
 			printf("Loaded %s (", comanda_undo[*cnt_undo].fisier);
 			printf("bitmap font %s)\n", comanda_undo[*cnt_undo].nume_font);
 		} else if (comanda_undo[*cnt_undo].pixeli &&
-				   comanda_undo[*cnt_undo].nglyph) { //comanda este Type
+				   comanda_undo[*cnt_undo].nglyph) { // Command is Type
 			printf("Text written\n");
 		}
 		(*cnt_redo)--;
 	}
 }
 
+/* Parse and load a Lindenmayer System (L-System) configuration from a file */
 void lsystem(comanda *comanda_undo, comanda  *comanda_redo,
 			 int *cnt_undo, int *cnt_redo, char *buff)
 {
@@ -206,7 +215,7 @@ void lsystem(comanda *comanda_undo, comanda  *comanda_redo,
 		free_sir(&fisier);
 		return;
 	}
-	char *axioma =  alocare_dinamica();
+	char *axioma = alocare_dinamica();
 	int nrules = 0;
 	fscanf(date, "%s", axioma);
 	fscanf(date, "%d", &nrules);
@@ -243,9 +252,10 @@ void lsystem(comanda *comanda_undo, comanda  *comanda_redo,
 	*cnt_redo = -1;
 }
 
+/* Calculate and output the n-th derivation of the currently loaded L-System */
 void derive(comanda *comanda_undo, int *cnt_undo, char *buff)
 {
-	int ok = -1; //presupunem ca nu exista un l-system memorat
+	int ok = -1; 
 	for (int i = *cnt_undo; i >= 0 && ok == -1; i--) {
 		if (comanda_undo[i].nrules != 0) {
 			ok = i;
@@ -303,6 +313,7 @@ void derive(comanda *comanda_undo, int *cnt_undo, char *buff)
 	free_sir(&derive);
 }
 
+/* Load a binary PPM (P6) image into memory */
 void load(comanda *comanda_undo, comanda  *comanda_redo,
 		  int *cnt_undo, int *cnt_redo, char *buff)
 {
@@ -345,9 +356,10 @@ void load(comanda *comanda_undo, comanda  *comanda_redo,
 	*cnt_redo = -1;
 }
 
+/* Write the current image state to a binary PPM (P6) file */
 void save(comanda *comanda_undo, int *cnt_undo, char *buff)
 {
-	int ok = -1; //presupunem ca nu exista o imagine memorata
+	int ok = -1;
 	for (int i = *cnt_undo; i >= 0 && ok == -1; i--) {
 		if (comanda_undo[i].w != 0) {
 			ok = i;
@@ -376,6 +388,7 @@ void save(comanda *comanda_undo, int *cnt_undo, char *buff)
 	fclose(date); free_sir(&fisier);
 }
 
+/* Helper function to compute the n-th derivation specifically for Turtle graphics */
 char *turtle_derive(comanda *comanda_undo, int ok, int n)
 {
 	int nrules = comanda_undo[ok].nrules;
@@ -422,6 +435,7 @@ char *turtle_derive(comanda *comanda_undo, int ok, int n)
 	return derive;
 }
 
+/* Rasterize and draw a line on the image matrix using Bresenham's line algorithm */
 void desenare_linie(int x0, int y0, int x1, int y1, int R, int G, int B,
 					int width, int height, unsigned char **pixeli)
 {
@@ -452,10 +466,11 @@ void desenare_linie(int x0, int y0, int x1, int y1, int R, int G, int B,
 	}
 }
 
+/* Execute spatial movements and render fractal shapes based on L-System string */
 void turtle(comanda *comanda_undo, comanda  *comanda_redo,
 			int *cnt_undo, int *cnt_redo, char *buff)
 {
-	int ok1 = -1; //presupunem ca nu exista un l-system memorat
+	int ok1 = -1; 
 	for (int i = *cnt_undo; i >= 0 && ok1 == -1; i--) {
 		if (comanda_undo[i].axioma) {
 			ok1 = i;
@@ -465,7 +480,7 @@ void turtle(comanda *comanda_undo, comanda  *comanda_redo,
 		printf("No L-system loaded\n");
 		return;
 	}
-	int ok2 = -1; //presupunem ca nu exista o imagine memorata
+	int ok2 = -1; 
 	for (int i = *cnt_undo; i >= 0 && ok2 == -1; i--) {
 		if (comanda_undo[i].pixeli) {
 			ok2 = i;
@@ -483,8 +498,7 @@ void turtle(comanda *comanda_undo, comanda  *comanda_redo,
 		return;
 	}
 	char *derive = turtle_derive(comanda_undo, ok1, n);
-	unsigned char **pixeli = malloc(comanda_undo[ok2].h
-							* sizeof(unsigned char *));
+	unsigned char **pixeli = malloc(comanda_undo[ok2].h * sizeof(unsigned char *));
 	if (!pixeli) {
 		printf("Eroare de alocare.\n");
 	}
@@ -534,6 +548,7 @@ void turtle(comanda *comanda_undo, comanda  *comanda_redo,
 	*cnt_redo = -1;
 }
 
+/* Parse glyph metadata and hex bitmaps from the BDF font format */
 void caracter_date(FILE *date, char *citire, chars *caracter, int i)
 {
 	if (strncmp(citire, "ENCODING ", 9) == 0) {
@@ -555,10 +570,9 @@ void caracter_date(FILE *date, char *citire, chars *caracter, int i)
 		}
 	}
 	if (strncmp(citire, "BITMAP", 6) == 0) {
-		caracter[i].bitmaps = malloc(caracter[i].bbh *
-			sizeof(unsigned char *));
+		caracter[i].bitmaps = malloc(caracter[i].bbh * sizeof(unsigned char *));
 		int biti_rand = (caracter[i].bbw + 7) / 8;
-		//pe rand se afla un multiplu de 8 biti
+		
 		for (int j = 0; j < caracter[i].bbh; j++) {
 			fgets(citire, MAX, date);
 			caracter[i].bitmaps[j] = malloc(biti_rand);
@@ -573,6 +587,7 @@ void caracter_date(FILE *date, char *citire, chars *caracter, int i)
 	}
 }
 
+/* Open and parse a BDF font file into memory */
 void font(comanda *comanda_undo, comanda  *comanda_redo,
 		  int *cnt_undo, int *cnt_redo, char *buff)
 {
@@ -593,7 +608,6 @@ void font(comanda *comanda_undo, comanda  *comanda_redo,
 			strcpy(nume, citire + 5);
 			int len = strlen(nume);
 			if (len == MAX - 6 && nume[len - 1] != '\n') {
-				//nu a fost citit tot numele fontului
 				int cnt = MAX;
 				char c;
 				while ((c = fgetc(date)) != '\n') {
@@ -610,12 +624,13 @@ void font(comanda *comanda_undo, comanda  *comanda_redo,
 		}
 		fgets(citire, MAX, date);
 	} while (strncmp(citire, "CHARS ", 6));
+	
 	if (sscanf(citire + 6, "%d", &nglyphs) != 1) {
 		return;
 	}
 	chars *caracter = malloc(nglyphs * sizeof(chars));
 	for (int i = 0; i < nglyphs; i++) {
-		fgets(citire, MAX, date); //am citit linia cu "STARTCHAR"
+		fgets(citire, MAX, date); 
 		while (strncmp(citire, "ENDCHAR", 7)) {
 			caracter_date(date, citire, caracter, i);
 			fgets(citire, MAX, date);
@@ -633,22 +648,18 @@ void font(comanda *comanda_undo, comanda  *comanda_redo,
 	*cnt_redo = -1;
 }
 
+/* Map the bits of a character's bitmap onto the 2D pixel image */
 void desenare_caracter(int h, int w, chars *glyph, double x, double y,
 					   int R, int G, int B, unsigned char **pixeli)
 {
 	for (int rand = 0; rand < (*glyph).bbh; rand++) {
 		for (int coloana = 0; coloana < (*glyph).bbw; coloana++) {
 			int byte = coloana / 8;
-			// octetul in care se află bitul coloanei respective
-			int bit = 7 - (coloana % 8); //poziția bitului în octet
+			int bit = 7 - (coloana % 8); 
 			if ((*glyph).bitmaps[rand][byte] & (1 << bit)) {
-				//verific daca bitul este 1
 				int x1 = x + (*glyph).bbxoff + coloana;
-				int y1 = y + (*glyph).bbyoff +
-						(*glyph).bbh - 1 - rand;
-				//inversez randurile
+				int y1 = y + (*glyph).bbyoff + (*glyph).bbh - 1 - rand;
 				if (x1 >= 0 && x1 < w && y1 >= 0 && y1 < h) {
-					//verific daca nu se depaseste imaginea
 					int linie = h - 1 - y1;
 					pixeli[linie][3 * x1]     = (unsigned char)R;
 					pixeli[linie][3 * x1 + 1] = (unsigned char)G;
@@ -659,10 +670,11 @@ void desenare_caracter(int h, int w, chars *glyph, double x, double y,
 	}
 }
 
+/* Render a complete text string using the currently loaded bitmap font */
 void type(comanda *comanda_undo, comanda  *comanda_redo,
 		  int *cnt_undo, int *cnt_redo, char *buff)
 {
-	int ok1 = -1; //presupunem ca nu exista o imagine memorata
+	int ok1 = -1; 
 	for (int i = *cnt_undo; i >= 0 && ok1 == -1; i--) {
 		if (comanda_undo[i].pixeli) {
 			ok1 = i;
@@ -672,7 +684,7 @@ void type(comanda *comanda_undo, comanda  *comanda_redo,
 		printf("No image loaded\n");
 		return;
 	}
-	int ok2 = -1; //presupunem ca nu exista un font memorat
+	int ok2 = -1; 
 	for (int i = *cnt_undo; i >= 0 && ok2 == -1; i--) {
 		if (comanda_undo[i].nume_font) {
 			ok2 = i;
@@ -688,17 +700,18 @@ void type(comanda *comanda_undo, comanda  *comanda_redo,
 	char *inceput_mesaj = strchr(buff, '"');
 	char *sfarsit_mesaj = strrchr(buff, '"');
 	int distanta = sfarsit_mesaj - inceput_mesaj - 1;
-		if (distanta > 0) {
-			strncpy(mesaj, inceput_mesaj + 1, distanta);
-			mesaj[distanta] = '\0';
-		} else {
-			mesaj[0] = '\0';
-		}
-		if (sscanf(sfarsit_mesaj + 1, "%d %d %d %d %d", &x, &y, &R, &G, &B)
-			!= 5) {
-			free(mesaj);
-			return;
-		}
+	
+	if (distanta > 0) {
+		strncpy(mesaj, inceput_mesaj + 1, distanta);
+		mesaj[distanta] = '\0';
+	} else {
+		mesaj[0] = '\0';
+	}
+	
+	if (sscanf(sfarsit_mesaj + 1, "%d %d %d %d %d", &x, &y, &R, &G, &B) != 5) {
+		free(mesaj);
+		return;
+	}
 	unsigned char **pixeli = malloc(h * sizeof(unsigned char *));
 	if (!pixeli) {
 		printf("Eroare de alocare.\n");
@@ -738,9 +751,10 @@ void type(comanda *comanda_undo, comanda  *comanda_redo,
 	*cnt_redo = -1;
 }
 
+/* Analyze the binary pixel stream for specific read-error vulnerabilities (0010, 1101) */
 void bitcheck(comanda *comanda_undo, int *cnt_undo)
 {
-	int ok = -1; //presupunem ca nu exista o imagine memorata
+	int ok = -1; 
 	for (int i = *cnt_undo; i >= 0 && ok == -1; i--) {
 		if (comanda_undo[i].pixeli) {
 			ok = i;
@@ -761,33 +775,30 @@ void bitcheck(comanda *comanda_undo, int *cnt_undo)
 	for (long i = 0; i < biti - 3; i++) {
 		int bit[4];
 		for (int k = 0; k < 4; k++) {
-			long bit_poz_pix = i + k; //pozitia bitului in "pixeli"
-			long byte = bit_poz_pix / 8; //octetul in care se află bitul
-			int bit_poz = 7 - (bit_poz_pix % 8); //poziția bitului în octet
+			long bit_poz_pix = i + k; 
+			long byte = bit_poz_pix / 8; 
+			int bit_poz = 7 - (bit_poz_pix % 8); 
 			bit[k] = (pixeli[byte] >> bit_poz) & 1;
-			//extrag bitul: il aduc pe pozitia 0 și elimin restul bitilor
 		}
+		
 		if ((bit[0] == 0 && bit[1] == 0 && bit[2] == 1 && bit[3] == 0) ||
 			(bit[0] == 1 && bit[1] == 1 && bit[2] == 0 && bit[3] == 1)) {
-			long bit_poz = i + 2; // bitul greșit este al treilea
-			long byte = bit_poz / 8; //octetul in care se află bitul
-			int bit = 7 - (bit_poz % 8); //poziția bitului în octet
-			long pixel = byte / 3; //numarul pixelului din imagine
-			int culoare = byte % 3; //aflu daca este R,G sau B
+			long bit_poz = i + 2; 
+			long byte = bit_poz / 8; 
+			int bit = 7 - (bit_poz % 8); 
+			long pixel = byte / 3; 
+			int culoare = byte % 3; 
 			int coloana = pixel % w;
 			int linie = pixel / w;
+			
 			unsigned char R = comanda_undo[ok].pixeli[linie][3 * coloana];
 			unsigned char G = comanda_undo[ok].pixeli[linie][3 * coloana + 1];
 			unsigned char B = comanda_undo[ok].pixeli[linie][3 * coloana + 2];
-			if (culoare == 0) {
-				R ^= (1 << bit);
-			}
-			if (culoare == 1) {
-				G ^= (1 << bit);
-			}
-			if (culoare == 2) {
-				B ^= (1 << bit);
-			}
+			
+			if (culoare == 0) R ^= (1 << bit);
+			if (culoare == 1) G ^= (1 << bit);
+			if (culoare == 2) B ^= (1 << bit);
+			
 			printf("Warning: pixel at (%d, %d) may be read as (%d, %d, %d)\n",
 				   coloana, h - 1 - linie, R, G, B);
 		}
@@ -798,12 +809,14 @@ void bitcheck(comanda *comanda_undo, int *cnt_undo)
 	}
 }
 
+/* Main command loop and entry point */
 int main(void)
 {
 	char *buff = alocare_dinamica();
 	int cnt_undo = -1, cnt_redo = -1, cnt_u = MAX, cnt_r = MAX;
 	comanda *comanda_undo = malloc(MAX * sizeof(comanda));
 	comanda *comanda_redo = malloc(MAX * sizeof(comanda));
+	
 	fgets(buff, MAX, stdin);
 	do {
 		if (cnt_u - 1 <= cnt_undo) {
@@ -814,6 +827,7 @@ int main(void)
 			comanda_redo = realocare_comanda(comanda_redo, cnt_r);
 			cnt_r = cnt_r * 2;
 		}
+		
 		if (strncmp(buff, "UNDO", 4) == 0) {
 			undo(comanda_undo, comanda_redo, &cnt_undo, &cnt_redo);
 		}
@@ -846,7 +860,12 @@ int main(void)
 		}
 		fgets(buff, MAX, stdin);
 	} while (strncmp(buff, "EXIT", 4));
-	free_undo(comanda_undo, cnt_undo); free_redo(comanda_redo, cnt_redo);
-	free_sir(&buff); free(comanda_undo); free(comanda_redo);
+	
+	free_undo(comanda_undo, cnt_undo); 
+	free_redo(comanda_redo, cnt_redo);
+	free_sir(&buff); 
+	free(comanda_undo); 
+	free(comanda_redo);
+	
 	return 0;
 }
